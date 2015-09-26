@@ -1,0 +1,6 @@
+History
+
+26th September 12:30
+Initial Repository for Cache Simulator: Includes README, cache_sim.c, Makefile. Have coded create_cache, delete_cache functions.
+
+
