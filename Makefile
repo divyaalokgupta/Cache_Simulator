@@ -1,5 +1,5 @@
 Comp := gcc
-CFLAGS := -O3 -g -Wall
+CFLAGS := -O0 -g -Wall
 
 all: cache_sim
 
