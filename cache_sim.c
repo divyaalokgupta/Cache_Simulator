@@ -135,9 +135,9 @@ int main(int argc, char *argv[])
         {
             printf("\n===== L2 contents =====\n");
             print_cache(L1->next);
+            delete_cache(L1->next);
         }
         print_simulation_summary(L1);
-        delete_cache(L1->next);
         delete_cache(L1);
         return 0;
 }

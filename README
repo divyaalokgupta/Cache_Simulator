@@ -1,14 +1,16 @@
 History
 
-27th September
+27th September 03:49
+Code working for L1+L2 combination. Validation Runs 0,2,4,6 matching except L2 Miss Rate. The validation output shows the read miss rate instead of the total miss rate comprising of both reads and writes.
+
+27th September 03:38
 Code working for L1+L2 combintation. Validation Runs 2,6 matching except L2 Miss Rate. The validation output shows the read miss rate instead of the total miss rate comprising of both reads and writes.
 
-26th September
+26th September 20:31
 Code working wel for Validation Run 4. Showing matching simulation statistics as well. Coded the LRU sequenced output. Now need t start with L2.
 
-26th September 19:04
+26th September 19:05
 Code working for Validation Run 4 where we have a direct mapped L1 cache. Need to still get proper formatted output with statistics below.
 
-26th September 12:30
+26th September 12:32
 Initial Repository for Cache Simulator: Includes README, cache_sim.c, Makefile. Have coded create_cache, delete_cache functions.
-
