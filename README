@@ -1,5 +1,8 @@
 History
 
+26th September
+Code working wel for Validation Run 4. Showing matching simulation statistics as well. Coded the LRU sequenced output. Now need t start with L2.
+
 26th September 19:04
 Code working for Validation Run 4 where we have a direct mapped L1 cache. Need to still get proper formatted output with statistics below.
 
