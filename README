@@ -1,5 +1,8 @@
 History
 
+29th September 06:05
+Code Working for L1,L1+L2,L1+VC combinations. Validation Runs 0,1,2,4,6 matching except L1+VC Miss Rate. Need to understand how to calculate that.
+
 27th September 03:49
 Code working for L1+L2 combination. Validation Runs 0,2,4,6 matching except L2 Miss Rate. The validation output shows the read miss rate instead of the total miss rate comprising of both reads and writes.
 
