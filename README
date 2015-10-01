@@ -1,5 +1,8 @@
 History
 
+1st October
+Edited Makefile to include 'make clean' which removes object files and final excutable.
+
 1st October 00:44
 Code working for all given traces including Extra ones :).
 
