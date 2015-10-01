@@ -5,9 +5,17 @@
 #include<ctype.h>
 #include<math.h>
 
+#define NDEBUG
 #define MAX_ADDRESS_SIZE 32
 
 int DEBUG = 0;
+
+/* Structure Cache Block: Holder for every cache block
+ * Tag: Tag portion of address
+ * Valid: Valid bit
+ * Dirty: Dirty bit of cache: Zero on read One on write
+ * Count: Helps in deciding LRU in a prticular cache row
+ */
 
 struct cache_block {
         unsigned long tag;
@@ -15,6 +23,29 @@ struct cache_block {
         unsigned int dirty;
         unsigned int count;
 };
+
+/* Structure Cache: Holder for every cache memory
+ * Blocksize: Size of each block
+ * Tot_Numblocks: Number of blocks in the cache memory
+ * Assoc: Associativity of cache block
+ * Tot_Size: Total size of cache
+ * Tot_Numsets: Total number of rows in the cache (Redundant)
+ * Tag_bits: For a 32 bit address, denotes the number of bits to be used for tag portion of the address
+ * Index_bits: For a 32 bit address, denotes the number of bits to be used for index portion of the address
+ * Block_offset_bits: For a 32 bit address, denotes the number of bits to be used as the block offset.
+ * Rows: Number of rows in the cache.
+ * Read_hits: Number of read_hits for a cache memory
+ * Read_misses: Number of read misses for a cache memory
+ * Write_hits: Number of write hits for a cache memory
+ * Write_misses: Number of write misses for a cache memory
+ * Writebacks: Number of write backs from a cach memory to higher level memory
+ * Swap Requests: Number of swap requests made to Victim cache. (Including both that hit and missed)
+ * Swaps: Number of swaps actually made by a victim cache. Useful only for victim cache.
+ * Trace: Specifies the trace file passed as a command line argument. Used while printing the trace file's name in "print_simulation_summary" subroutine.
+ * *Block: Pointer to the array of cache blocks residing in a cache memory
+ * *Next: Pointer to the next upper level memory. In case there is no higher memory or there is RAM, then it points to NULL
+ * *Vc: Pointer to the victim cache of the current cache memory
+ */
 
 struct cache {
         char name[10];
@@ -40,32 +71,45 @@ struct cache {
         struct cache *vc;
 };
 
+/* Creates a cache memory, initializes static values and pointers in the data structure. Accepts blocksize, Assciativity, Total Size and Name of cache as arguments. It returns the pointer to the designed cache memory.*/
 struct cache *create_cache(unsigned int blocksize, unsigned int assoc, unsigned int cachesize, char *name);
 
+/* Frees pointer to the cache blocks inside a cache memory and the cache memory itself */
 void delete_cache(struct cache *mem);
 
+/* Prints the initial parameters passed to the executable as command line arguments */
 void print_simulator_config(struct cache *mem);
 
+/* Prints the contents of cache starting from MRU to its LRU block(s) to standard output */
 void print_cache(struct cache *mem);
 
+/* Prints the statistics such as number of misses, number of accesses, writebacks, Memory traffic etc. to standard output */
 void print_simulation_summary(struct cache *mem);
 
 void access_cache(struct cache *mem, unsigned long address, char mode);
 
+/* Check whether a particular address separated into tag and index resides in cache memory. Returns column if yes otherwise returns -1 */
 int check_cache_hit(struct cache *mem, unsigned long tag, unsigned long index);
 
+/* In case of misses, creates space in cache by checking for empty blocks or evicting the LRU in the desired set (using the index) */
 int create_space(struct cache *mem, unsigned long tag, unsigned long index);
 
+/* Updates the count for each block in a cache row. This is extremely important while accessing a cache for read or write as it changes the LRU/MRU. */
 void update_count(struct cache *mem, unsigned int row, unsigned int col);
 
+/* Debug function used for printing contents of a row including tag, valid bit, dirty bit and count */
 void display_row(struct cache *mem, unsigned int row);
 
+/* Function used to decipher the index portion of the address depending the cache memory's size of blocks, rows etc. */
 unsigned long decode_index(struct cache *mem, unsigned long address);
 
+/* Function used to decipher the tag portion of the address depending the cache memory's size of blocks, rows etc. */
 unsigned long decode_tag(struct cache *mem, unsigned long address);
 
+/* Accesses victim and performs all roles of access cache function for a victim cache */
 int access_victim_cache(struct cache *mem, unsigned long tag, unsigned long index, char mode);
 
+/* Run Command:  ./sim_cache <Block Size> <L1 Size> <L1 Associativity> <Victim Cache Number of Blocks> <L2 Size> <L2 Associativity> <Trace File> */
 int main(int argc, char *argv[])
 {
         if(argc <= 7)
@@ -148,8 +192,9 @@ int main(int argc, char *argv[])
                 {
                         printf("Null character in trace");
                 }
-                //print_cache(L1);
-                //print_cache(L1->vc);
+                //DEBUG HELP: print_cache(L1);
+                //DEBUG HELP: print_cache(L1->vc);
+                //DEBUG HELP: print_cache(L2);
         }
         fclose(trace);
 
@@ -239,7 +284,14 @@ void print_simulator_config(struct cache *mem)
         printf("  BLOCKSIZE:\t\t%d\n",mem->blocksize);
         printf("  L1_SIZE:\t\t%d\n",mem->tot_size);
         printf("  L1_ASSOC:\t\t%d\n",mem->assoc);
-        printf("  VC_NUM_BLOCKS:\t%d\n",0);
+        if(mem->vc == NULL)
+        {
+            printf("  VC_NUM_BLOCKS:\t%d\n",0);
+        }
+        else
+        {
+            printf("  VC_NUM_BLOCKS:\t%d\n",mem->vc->tot_numblocks);
+        }
         if(mem->next == NULL)
         {
             printf("  L2_SIZE:\t\t%d\n",0);
@@ -276,15 +328,15 @@ void print_cache(struct cache *mem)
             {
                 for (j=0;j<mem->assoc;j++)
                 {
-//                  if(mem->blocks[i*mem->assoc+j].count == min)
+                    //DEBUG HELP: if(mem->blocks[i*mem->assoc+j].count == min)
                     if(mem->blocks[i*mem->assoc+j].valid == 1 && mem->blocks[i*mem->assoc+j].count == min)
                     {
                         if (mem->blocks[i*mem->assoc+j].dirty == 0)
                             printf("%lx\t    ",mem->blocks[i*mem->assoc+j].tag);
-                            //printf("%lx,%d,%d\t    ",mem->blocks[i*mem->assoc+j].tag,mem->blocks[i*mem->assoc+j].valid,mem->blocks[i*mem->assoc+j].count);
+                            //DEBUG HELP: printf("%lx,%d,%d\t    ",mem->blocks[i*mem->assoc+j].tag,mem->blocks[i*mem->assoc+j].valid,mem->blocks[i*mem->assoc+j].count);
                         else
                             printf("%lx D\t  ",mem->blocks[i*mem->assoc+j].tag);
-                            //printf("%lx,%d,%d D\t  ",mem->blocks[i*mem->assoc+j].tag,mem->blocks[i*mem->assoc+j].valid,mem->blocks[i*mem->assoc+j].count);
+                            //DEBUG HELP: printf("%lx,%d,%d D\t  ",mem->blocks[i*mem->assoc+j].tag,mem->blocks[i*mem->assoc+j].valid,mem->blocks[i*mem->assoc+j].count);
                         ++min;
                     }
                 }
@@ -315,7 +367,7 @@ void print_simulation_summary(struct cache *mem)
             printf(" e. number of swap requests:                      %d\n",mem->swap_requests);
             printf(" f. swap request rate:                       %0.4f\n",(float)mem->swap_requests/(mem->read_hits+mem->read_misses+mem->write_hits+mem->write_misses));
             printf(" g. number of swaps:                              %d\n",mem->swaps);
-            printf(" h. combined L1+VC miss rate:                %0.4f\n",(float)(mem->read_misses+mem->write_misses - mem->vc->read_hits - mem->vc->write_hits + mem->vc->read_misses + mem->vc->write_misses)/(mem->read_hits+mem->read_misses+mem->write_hits+mem->write_misses));
+            printf(" h. combined L1+VC miss rate:                %0.4f\n",(float)(mem->read_misses+mem->write_misses - mem->swaps)/(mem->read_hits+mem->read_misses+mem->write_hits+mem->write_misses));
             printf(" i. number writebacks from L1/VC:                 %d\n",mem->writebacks+mem->vc->writebacks);
         }
 
@@ -327,7 +379,14 @@ void print_simulation_summary(struct cache *mem)
             printf(" m. number of L2 write misses:                    0\n");
             printf(" n. L2 miss rate:                            0.0000\n");
             printf(" o. number of writebacks from L2:                 0\n");
-            printf(" p. total memory traffic:                     %d\n",mem->read_misses+mem->write_misses+mem->writebacks);
+            if(mem->vc == NULL)
+            {
+                printf(" p. total memory traffic:                     %d\n",mem->read_misses+mem->write_misses+mem->writebacks);
+            }
+            else
+            {
+                printf(" p. total memory traffic:                     %d\n",mem->read_misses+mem->write_misses - mem->swaps + mem->writebacks  + mem->vc->writebacks);
+            }
         }
         else
         {
@@ -337,7 +396,14 @@ void print_simulation_summary(struct cache *mem)
             printf(" m. number of L2 write misses:                    %d\n",mem->next->write_misses);
             printf(" n. L2 miss rate:                            %0.4f\n",(float)(mem->next->read_misses)/(mem->next->read_misses+mem->next->read_hits));
             printf(" o. number of writebacks from L2:                 %d\n",mem->next->writebacks);
-            printf(" p. total memory traffic:                     %d\n",mem->next->read_misses+mem->next->write_misses+mem->next->writebacks);
+            if(mem->vc == NULL)
+            {
+                printf(" p. total memory traffic:                     %d\n",mem->next->read_misses+mem->next->write_misses+mem->next->writebacks);
+            }
+            else
+            {
+                printf(" p. total memory traffic:                     %d\n",mem->next->read_misses + mem->next->write_misses + mem->writebacks + mem->next->writebacks);
+            }
         }
 }
 
@@ -390,7 +456,7 @@ void access_cache(struct cache *mem, unsigned long address, char mode)
      {
         if (DEBUG == 1 ) {printf(" %s read: %lx (tag %lx, index %lu)\n",mem->name,((address>>mem->block_offset_bits)<<mem->block_offset_bits),tag,index);}
      }
-     else if(mode == 'w') 
+     else if(mode == 'w')
      {
         if (DEBUG == 1 ) {printf(" %s write: %lx (tag %lx, index %lu)\n",mem->name,((address>>mem->block_offset_bits)<<mem->block_offset_bits),tag,index);}
      }
@@ -438,8 +504,10 @@ void access_cache(struct cache *mem, unsigned long address, char mode)
         
          if(mem->next != NULL)
          {
-            access_cache(mem->next,address,'r');
+            if(victim_cache_help == 0)
+                access_cache(mem->next,address,'r');
          }
+
          if(victim_cache_help == 0)
          {
              //INFO: Get data from upper level memory
@@ -482,13 +550,6 @@ int create_space(struct cache *mem, unsigned long tag, unsigned long index)
 {
      unsigned int row = index * mem->assoc;
      int j;
-     for(j=0;j<mem->assoc;j++)
-     {
-         if (DEBUG == 1 )
-         {
-             //printf(" Valid: %d, Dirty: %d, Tag: %lx, Count: %d\n",mem->blocks[row + j].valid,mem->blocks[row + j].dirty,mem->blocks[row + j].tag,mem->blocks[row + j].count);
-         }
-     }
 
      for(j=0;j<mem->assoc;j++)
      {
@@ -525,7 +586,7 @@ int create_space(struct cache *mem, unsigned long tag, unsigned long index)
           {
               printf(" %s victim: %lx (tag %lx, index %lu, clean)\n",mem->name,identified_block_recreated_address,mem->blocks[row+j].tag,index);
           }
-          //Silent Eviction
+          //INFO: Silent Eviction
      }
      else
      {
@@ -552,7 +613,7 @@ int access_victim_cache(struct cache *mem, unsigned long tag, unsigned long inde
              return 0;
         }
      }
-     unsigned long required_address,vc_tag;
+     unsigned long required_address;
      required_address = tag<<mem->index_bits;
      required_address = required_address<<mem->block_offset_bits;
      required_address = required_address + (index<<mem->block_offset_bits);
@@ -584,7 +645,7 @@ int access_victim_cache(struct cache *mem, unsigned long tag, unsigned long inde
 
      assert(mem->vc->rows == 1);
 
-     //victim hit or miss
+     //INFO: victim hit or miss
      int column;
      column = check_cache_hit(mem->vc,decode_tag(mem->vc,required_address),0);
      if(column < 0)
@@ -599,13 +660,19 @@ int access_victim_cache(struct cache *mem, unsigned long tag, unsigned long inde
          }
          if (DEBUG == 1) {printf(" %s miss \n",mem->vc->name);}
          column = create_space(mem->vc,decode_tag(mem->vc,identified_block_recreated_address),0);
-         mem->vc->blocks[column].tag = decode_tag(mem->vc,identified_block_recreated_address);
-         mem->vc->blocks[column].dirty = mem->blocks[row+j].dirty;
-         mem->vc->blocks[column].valid = 1;
-         update_count(mem->vc,0,column);
-         if (DEBUG == 1 ) {printf(" %s update LRU\n",mem->vc->name);}
+         if(mem->next != NULL)
+         {
+            access_cache(mem->next,required_address,'r');
+         }
+         //INFO: Access Upper Memory for data
          mem->blocks[row + j].valid = 1;
          mem->blocks[row + j].tag = tag;
+         //INFO: Acquire L1's evicted data
+         mem->vc->blocks[column].tag = decode_tag(mem->vc,identified_block_recreated_address);
+         mem->vc->blocks[column].valid = 1;
+         mem->vc->blocks[column].dirty = mem->blocks[row+j].dirty;
+         update_count(mem->vc,0,column);
+         if (DEBUG == 1 ) {printf(" %s update LRU\n",mem->vc->name);}
          update_count(mem,index,j);
          if (DEBUG == 1 ) {printf(" %s update LRU\n",mem->name);}
          if(mode == 'r')
@@ -655,6 +722,6 @@ int access_victim_cache(struct cache *mem, unsigned long tag, unsigned long inde
              if (DEBUG == 1 ) {printf(" %s set dirty\n",mem->name);}
          }
      }
-         printf("%d %d %d %d\n",mem->vc->read_hits,mem->vc->read_misses,mem->vc->write_hits,mem->vc->write_misses);
+         //DEBUG HELP: printf("%d %d %d %d\n",mem->vc->read_hits,mem->vc->read_misses,mem->vc->write_hits,mem->vc->write_misses);
      return 1;
 }

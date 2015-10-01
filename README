@@ -1,5 +1,8 @@
 History
 
+1st October 00:44
+Code working for all given traces including Extra ones :).
+
 29th September 06:05
 Code Working for L1,L1+L2,L1+VC combinations. Validation Runs 0,1,2,4,6 matching except L1+VC Miss Rate. Need to understand how to calculate that.
 
