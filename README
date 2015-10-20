@@ -1,6 +1,9 @@
 History
 
-1st October
+1st October 03:17
+Edited cache_sim.c file to suit the grendel's 64 bit architecture. Initially the code was running on 32 bit architecture. The 64 bit architecture was causing the index field to get too long because there was no truncation at 32 bits. The issues was resolved by masking bits using a simple AND gate and testing the code with all Validation outputs and extra runs.
+
+1st October 01:48
 Edited Makefile to include 'make clean' which removes object files and final excutable.
 
 1st October 00:44

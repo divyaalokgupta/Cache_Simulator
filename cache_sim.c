@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
         
         if(L1_vc_blocks > 0)
         {
-            printf("===== VC contents =====\n");
+            printf("\n===== VC contents =====\n");
             print_cache(vc);
         }
     
@@ -432,8 +432,13 @@ unsigned long decode_index(struct cache *mem, unsigned long address)
       if(mem->index_bits == 0)
             return 0;
       address = address>>mem->block_offset_bits;
-      address = address<<(mem->block_offset_bits + mem->tag_bits);
-      address = address>>(mem->block_offset_bits + mem->tag_bits);
+      int i;
+      unsigned int num = 0;
+      for(i=0;i<mem->index_bits;i++)
+      {
+	  num = num + pow(2,i);
+      }
+      address = address&num;
       return address;
 }
 
